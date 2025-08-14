@@ -1,0 +1,37 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22 },
+  "configurePresets": [
+    {
+      "name": "mingw-release",
+      "displayName": "MinGW Release",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "build/mingw-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_OPENMP": "ON",
+        "ENABLE_SDL2": "OFF",
+        "ENABLE_SFML": "OFF"
+      }
+    },
+    {
+      "name": "mingw-release-sdl2",
+      "displayName": "MinGW Release + SDL2 (vcpkg)",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "build/mingw-release-sdl2",
+      "toolchainFile": "",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_OPENMP": "ON",
+        "ENABLE_SDL2": "ON",
+        "ENABLE_SFML": "OFF",
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "mingw-release", "configurePreset": "mingw-release" },
+    { "name": "mingw-release-sdl2", "configurePreset": "mingw-release-sdl2" }
+  ],
+  "testPresets": []
+}

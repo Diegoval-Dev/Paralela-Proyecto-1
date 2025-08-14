@@ -1,0 +1,22 @@
+CPU: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz | Cores: 6 | Logical: 12
+OS:  Microsoft Windows NT 10.0.22631.0
+
+cmake version 4.0.0-rc3
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+
+g++: C:\MinGW64\mingw64\bin\g++.exe
+g++.exe (x86_64-posix-sjlj-rev0, Built by MinGW-W64 project) 8.1.0
+Copyright (C) 2018 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+CMake Generators:
+
+git version 2.37.3.windows.1
+Python 3.12.4
+Python 3.10.7
+pip 25.1.1 from C:\Users\diego\AppData\Local\Programs\Python\Python310\lib\site-packages\pip (python 3.10)
+
+

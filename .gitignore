@@ -1,1 +1,54 @@
 *.pdf
+# Build and CMake files
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/Makefile
+CMakePresets.json.user
+
+# Compiled binaries and object files
+*.exe
+*.out
+*.obj
+*.o
+*.a
+*.so
+*.dll
+*.lib
+*.pdb
+
+# IDE/editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Results and data outputs
+/data/results/
+
+# PDF and report files
+*.pdf
+
+# Logs
+*.log
+
+# vcpkg build artifacts
+/vcpkg_installed/
+/vcpkg_buildtrees/
+/vcpkg_downloads/
+/vcpkg_packages/
+
+# User-specific files
+*.user
+*.swp
+*.bak

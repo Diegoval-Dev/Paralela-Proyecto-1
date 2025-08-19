@@ -1,0 +1,2 @@
+﻿N,Threads,Schedule,Tb_ms,To_ms,Speedup,Efficiency
+2000,1,static,0.018014,0.044197,0.408,0.408

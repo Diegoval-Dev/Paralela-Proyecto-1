@@ -1,52 +1,70 @@
 param(
   [int[]]$NList = @(2000,4000,8000),
   [int[]]$ThreadsList = @(1,2,4,6,12),
-  [string[]]$Schedules = @("static","dynamic_64","guided_64")  # usar nombres con ':' -> '_' (como los generó el runner)
+  [string[]]$Schedules = @("static","dynamic_64","guided_64"),
+  [switch]$VerboseScan
 )
 
-function Get-AvgMsFromCsvs {
-  param([System.IO.FileInfo[]]$Files)
-  if (-not $Files -or $Files.Count -eq 0) { return $null }
-  $means = @()
-  foreach ($f in $Files) {
-    # Cada CSV tiene columnas: frame,ms
-    try {
-      $rows = Import-Csv -Path $f.FullName
-      if ($rows.Count -eq 0) { continue }
-      $avg = ($rows | Measure-Object -Property ms -Average).Average
-      if ($null -ne $avg) { $means += [double]$avg }
-    } catch {
-      Write-Warning "No pude leer $($f.FullName): $_"
-    }
-  }
-  if ($means.Count -eq 0) { return $null }
-  return ($means | Measure-Object -Average).Average
-}
-
-$root = (Get-Location).Path
+$root   = (Get-Location).Path
 $outDir = Join-Path $root "data\results"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 $summaryPath = Join-Path $outDir "summary_schedules.csv"
-$lines = @()
-$lines += "N,Threads,Schedule,Tb_ms,To_ms,Speedup,Efficiency"
+$lines = @("N,Threads,Schedule,Tb_ms,To_ms,Speedup,Efficiency")
+
+Write-Host "Params:"
+Write-Host ("  NList       = {0}" -f ($NList -join ","))
+Write-Host ("  ThreadsList = {0}" -f ($ThreadsList -join ","))
+Write-Host ("  Schedules   = {0}" -f ($Schedules -join ","))
+
+function Get-AvgMs {
+  param([System.IO.FileInfo[]]$Files)
+  if (-not $Files -or $Files.Count -eq 0) { return $null }
+  $vals = @()
+  foreach ($f in $Files) {
+    try {
+      $rows = Import-Csv -Path $f.FullName
+      foreach ($r in $rows) {
+        if ($r.ms -ne $null -and $r.ms -ne "") {
+          $vals += [double]::Parse($r.ms, [System.Globalization.CultureInfo]::InvariantCulture)
+        }
+      }
+    } catch {
+      Write-Warning "No pude leer $($f.Name): $_"
+    }
+  }
+  if ($vals.Count -eq 0) { return $null }
+  return ($vals | Measure-Object -Average).Average
+}
+
+function FindFilesPattern {
+  param([string]$Pattern)
+  $all = Get-ChildItem -Path $outDir -File
+  $matched = $all | Where-Object { $_.Name -like $Pattern }
+  if ($VerboseScan) { Write-Host ("MATCH {0} -> {1}" -f $Pattern, ($matched | Measure-Object).Count) }
+  return $matched
+}
 
 foreach ($N in $NList) {
-  # Baseline secuencial Tb para este N (promedio de promedios)
-  $seqFiles = Get-ChildItem -Path $outDir -Filter ("seq_N{0}_r*.csv" -f $N) -File | Sort-Object Name
-  $Tb = Get-AvgMsFromCsvs $seqFiles
+  $seqPat = ("seq_N{0}_r*.csv" -f $N)
+  $seqFiles = FindFilesPattern $seqPat
+  $Tb = Get-AvgMs $seqFiles
   if ($null -eq $Tb) {
-    Write-Warning "No hay CSVs secuenciales para N=$N. Saltando."
+    Write-Warning "No hay CSVs secuenciales para N=$N (pat=$seqPat). Saltando N."
     continue
   }
 
   foreach ($T in $ThreadsList) {
     foreach ($S in $Schedules) {
-      $pattern = ("omp_for_N{0}_T{1}_S{2}_r*.csv" -f $N,$T,$S)
-      $ompFiles = Get-ChildItem -Path $outDir -Filter $pattern -File | Sort-Object Name
-      $To = Get-AvgMsFromCsvs $ompFiles
+      $pat = ("omp_for_N{0}_T{1}_S{2}_r*.csv" -f $N,$T,$S)
+      $ompFiles = FindFilesPattern $pat
+      if (($ompFiles | Measure-Object).Count -eq 0) {
+        Write-Warning "Faltan CSVs para N=$N T=$T S=$S (pat=$pat)"
+        continue
+      }
+      $To = Get-AvgMs $ompFiles
       if ($null -eq $To) {
-        Write-Warning "Faltan CSVs para N=$N T=$T S=$S. (pattern=$pattern)"
+        Write-Warning "CSV sin datos válidos para N=$N T=$T S=$S (pat=$pat)"
         continue
       }
       $SPEED = $Tb / $To

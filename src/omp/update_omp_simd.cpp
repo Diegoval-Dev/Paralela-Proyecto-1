@@ -11,7 +11,7 @@ void update_step_omp_simd(State& s) {
     // Actualiza posiciones y velocidades
     #pragma omp parallel
     {
-      #pragma omp for schedule(static)
+      #pragma omp for schedule(runtime)
       for (int i=0;i<s.N;i++) {
         #pragma omp simd
         for (int k=0;k<1;k++) { // simd forzado sobre la operación (truco simple)
@@ -20,7 +20,7 @@ void update_step_omp_simd(State& s) {
         }
       }
       // Uso de condiciones de frontera
-      #pragma omp for schedule(static)
+      #pragma omp for schedule(runtime)
       for (int i=0;i<s.N;i++) {
         float xi=s.x[i], yi=s.y[i];
         if (xi < 0.f) { xi=0.f; s.vx[i] = -s.vx[i]; }

@@ -34,7 +34,7 @@ __pycache__/
 *.pyo
 
 # Results and data outputs
-#/data/results/
+*.csv
 
 # PDF and report files
 *.pdf

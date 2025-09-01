@@ -6,6 +6,7 @@
 /cmake_install.cmake
 /Makefile
 CMakePresets.json.user
+/build-visual/
 
 # Compiled binaries and object files
 *.exe

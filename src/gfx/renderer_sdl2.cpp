@@ -1,4 +1,3 @@
-// src/gfx/renderer_sdl2_ultra.cpp
 #include "gfx/renderer.hpp"
 #include <SDL2/SDL.h>
 #include <memory>
@@ -99,7 +98,7 @@ public:
         {
             throw std::runtime_error(std::string("SDL_Init failed: ") + SDL_GetError());
         }
-        Uint32 windowFlags = SDL_WINDOW_SHOWN;
+        Uint32 windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE; // Agregar flag resizable
         if (width == 0 && height == 0)
         {
             windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -125,21 +124,18 @@ public:
             throw std::runtime_error(std::string("SDL_CreateRenderer failed: ") + SDL_GetError());
         }
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        createEffectTextures();
-        buildNightValleyBackground();
-        initStars(420);
+        
+        // Inicialización completa
+        initializeResources();
+        
         rockets.reserve(64);
         sparks.reserve(4096);
         waves.reserve(128);
     }
+    
     ~SDL2UltraRenderer()
     {
-        if (trailTexture)
-            SDL_DestroyTexture(trailTexture);
-        if (glowTexture)
-            SDL_DestroyTexture(glowTexture);
-        if (backgroundTexture)
-            SDL_DestroyTexture(backgroundTexture);
+        cleanupTextures();
         if (renderer)
             SDL_DestroyRenderer(renderer);
         if (window)
@@ -148,15 +144,71 @@ public:
     }
 
 private:
+    // ---------- Gestión de recursos ----------
+    void cleanupTextures()
+    {
+        if (trailTexture) {
+            SDL_DestroyTexture(trailTexture);
+            trailTexture = nullptr;
+        }
+        if (glowTexture) {
+            SDL_DestroyTexture(glowTexture);
+            glowTexture = nullptr;
+        }
+        if (backgroundTexture) {
+            SDL_DestroyTexture(backgroundTexture);
+            backgroundTexture = nullptr;
+        }
+    }
+    
+    void initializeResources()
+    {
+        // Obtener dimensiones actuales de la ventana
+        SDL_GetWindowSize(window, &width, &height);
+        
+        cleanupTextures();
+        createEffectTextures();
+        buildNightValleyBackground();
+        initStars(420);
+    }
+    
+    void handleResize()
+    {
+        int newWidth, newHeight;
+        SDL_GetWindowSize(window, &newWidth, &newHeight);
+        
+        if (newWidth != width || newHeight != height) {
+            width = newWidth;
+            height = newHeight;
+            initializeResources();
+            
+            // Limpiar trails cuando cambia el tamaño
+            for (auto& trail : trails) {
+                trail.clear();
+            }
+        }
+    }
+
     // ---------- Inicialización ----------
     void createEffectTextures()
     {
         trailTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
         glowTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
         backgroundTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+        
+        if (!trailTexture || !glowTexture || !backgroundTexture) {
+            throw std::runtime_error(std::string("Failed to create textures: ") + SDL_GetError());
+        }
+        
         SDL_SetTextureBlendMode(trailTexture, SDL_BLENDMODE_BLEND);
         SDL_SetTextureBlendMode(glowTexture, SDL_BLENDMODE_ADD);
         SDL_SetTextureBlendMode(backgroundTexture, SDL_BLENDMODE_BLEND);
+        
+        // Limpiar trail texture inicialmente
+        SDL_SetRenderTarget(renderer, trailTexture);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+        SDL_RenderClear(renderer);
+        SDL_SetRenderTarget(renderer, nullptr);
     }
 
     static float smoothNoise1D(int x, int seed = 0)
@@ -252,6 +304,14 @@ private:
             if (e.type == SDL_QUIT)
             { /* noop */
             }
+            else if (e.type == SDL_WINDOWEVENT)
+            {
+                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
+                    e.window.event == SDL_WINDOWEVENT_RESIZED)
+                {
+                    handleResize();
+                }
+            }
             else if (e.type == SDL_KEYDOWN)
             {
                 switch (e.key.keysym.sym)
@@ -276,10 +336,15 @@ private:
             }
         }
     }
+    
     void toggleFullscreen()
     {
         Uint32 flags = SDL_GetWindowFlags(window);
         SDL_SetWindowFullscreen(window, (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+        
+        // Esperar un frame para que SDL procese el cambio
+        SDL_Delay(16);
+        handleResize();
     }
 
 public:
@@ -486,7 +551,7 @@ private:
             float vx = std::cos(ang) * spd;
             float vy = std::sin(ang) * spd;
 
-            // “shimmer” cálido: acerca el color a dorado/blanco
+            // "shimmer" cálido: acerca el color a dorado/blanco
             float j = rj(rng);
             SDL_Color base = r.color;
             SDL_Color col = {

@@ -41,7 +41,7 @@ Los scripts de PowerShell y Python en `scripts/` permiten:
 
 Ejemplo de resultado:
 
-![speedup](data/results/speedup_plot.png)
+![speedup](data/results/plot_speedup.png)
 
 ## Créditos
 - **Equipo**: Proyecto 1, Computación Paralela y Distribuida  
